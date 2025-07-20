@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Qurtex 10% Daily Fixed Profit Tracker</title>
+  <title>Qurtex Compounded 10% Daily Profit Tracker</title>
   <style>
     body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -14,7 +14,7 @@
   </style>
 </head>
 <body>
-  <h2>Qurtex 10% Daily Profit Tracker (Based on Initial Balance)</h2>
+  <h2>Qurtex 10% Daily Compounded Profit Tracker</h2>
   <label>Initial Balance ($): <input id="startBalance" type="number" value="100" /></label>
   <button onclick="startTracking()">Start</button>
   <button onclick="saveData()">💾 Save</button>
@@ -24,8 +24,8 @@
     <thead>
       <tr>
         <th>Day</th>
-        <th>Initial Balance</th>
-        <th>10% Fixed Profit</th>
+        <th>Starting Balance</th>
+        <th>10% Profit</th>
         <th>Expected Total</th>
         <th>Status</th>
       </tr>
@@ -35,20 +35,21 @@
 
   <script>
     const tableBody = document.querySelector("#trackerTable tbody");
-    let data = JSON.parse(localStorage.getItem("fixedQurtexData") || "[]");
-    let initialBalance = parseFloat(localStorage.getItem("fixedQurtexInitial") || "100");
+    let data = JSON.parse(localStorage.getItem("compoundQurtexData") || "[]");
+    let initialBalance = parseFloat(localStorage.getItem("compoundQurtexInitial") || "100");
 
     function startTracking() {
       initialBalance = parseFloat(document.getElementById("startBalance").value);
-      localStorage.setItem("fixedQurtexInitial", initialBalance);
+      localStorage.setItem("compoundQurtexInitial", initialBalance);
       data = [];
 
       let current = initialBalance;
-      const fixedProfit = +(initialBalance * 0.10).toFixed(2);
 
       for (let day = 1; day <= 30; day++) {
-        const expected = +(initialBalance + fixedProfit * day).toFixed(2);
-        data.push({ day, profit: fixedProfit, expected, status: "" });
+        const profit = +(current * 0.10).toFixed(2);
+        const expected = +(current + profit).toFixed(2);
+        data.push({ day, start: current, profit, expected, status: "" });
+        current = expected;
       }
 
       renderTable();
@@ -63,7 +64,7 @@
 
         tr.innerHTML = `
           <td>${row.day}</td>
-          <td>$${initialBalance.toFixed(2)}</td>
+          <td>$${row.start.toFixed(2)}</td>
           <td>$${row.profit.toFixed(2)}</td>
           <td>$${row.expected.toFixed(2)}</td>
           <td>
@@ -82,12 +83,12 @@
     }
 
     function saveData() {
-      localStorage.setItem("fixedQurtexData", JSON.stringify(data));
+      localStorage.setItem("compoundQurtexData", JSON.stringify(data));
     }
 
     function resetData() {
-      localStorage.removeItem("fixedQurtexData");
-      localStorage.removeItem("fixedQurtexInitial");
+      localStorage.removeItem("compoundQurtexData");
+      localStorage.removeItem("compoundQurtexInitial");
       location.reload();
     }
 
