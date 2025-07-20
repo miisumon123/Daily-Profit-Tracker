@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Qurtex 10% Daily Profit Tracker with Save Button</title>
+<title>Qurtex 10% Daily Profit Tracker with Target</title>
 <style>
   body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
   h2 { text-align: center; }
@@ -15,7 +15,7 @@
 </style>
 </head>
 <body>
-  <h2>Qurtex 10% Daily Profit Tracker</h2>
+  <h2>Qurtex 10% Daily Profit Tracker with Target</h2>
 
   <label>
     Starting Balance: $<input type="number" id="startBalance" min="1" step="0.01" />
@@ -53,7 +53,7 @@
       startBalanceInput.value = '';
     }
 
-    // Render tracker table (without saving on change)
+    // Render tracker table with Target Profit column
     function renderTracker() {
       let startBalance = parseFloat(startBalanceInput.value);
       if (isNaN(startBalance) || startBalance <= 0) {
@@ -61,8 +61,10 @@
         return;
       }
 
+      const dailyTargetProfit = startBalance * 0.10;
+
       let balance = startBalance;
-      let html = '<table><thead><tr><th>Day</th><th>Result</th><th>Profit</th><th>Balance</th></tr></thead><tbody>';
+      let html = '<table><thead><tr><th>Day</th><th>Target Profit</th><th>Result</th><th>Actual Profit</th><th>Balance</th></tr></thead><tbody>';
 
       for (let day = 1; day <= 30; day++) {
         let result = loadDayResult(day);
@@ -75,6 +77,7 @@
         }
         html += `<tr>
           <td>${day}</td>
+          <td>$${dailyTargetProfit.toFixed(2)}</td>
           <td>
             <select id="selectDay${day}">
               <option value="" ${result === '' ? 'selected' : ''}>-</option>
@@ -91,7 +94,6 @@
       trackerDiv.innerHTML = html;
     }
 
-    // Save all dropdown values on Save button click
     function saveAllResults() {
       let startBalance = parseFloat(startBalanceInput.value);
       if (isNaN(startBalance) || startBalance <= 0) {
@@ -108,7 +110,7 @@
         }
       }
       alert('Progress saved successfully!');
-      renderTracker(); // Refresh view to update profits/balances
+      renderTracker();
     }
 
     startBtn.onclick = () => {
@@ -125,7 +127,6 @@
       }
     };
 
-    // Load on page load
     window.onload = () => {
       let savedStart = loadStartBalance();
       if (savedStart !== null) {
