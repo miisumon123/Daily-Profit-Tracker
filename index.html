@@ -1,100 +1,308 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
   <meta charset="UTF-8" />
-  <title>Qurtex Compounded 10% Daily Profit Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Aviator 1xBet Clone with Admin Predictor</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
-    th { background: #333; color: white; }
-    .win { background-color: #d4fcd4; }
-    .lose { background-color: #fcd4d4; }
-    button { padding: 6px 12px; margin: 2px; }
+    /* Reset */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #1a1a1a;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #e1e1e1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      user-select: none;
+    }
+    header {
+      padding: 15px;
+      background: #0b1224;
+      font-weight: 700;
+      font-size: 1.8rem;
+      letter-spacing: 0.1em;
+      text-align: center;
+      color: #08a0ff;
+      border-bottom: 2px solid #0960cc;
+    }
+    main {
+      flex-grow: 1;
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #0b1224;
+      border-radius: 12px;
+      box-shadow: 0 0 10px #084f90;
+    }
+    .multiplier {
+      font-size: 5rem;
+      font-weight: 900;
+      text-align: center;
+      margin-bottom: 8px;
+      color: #08a0ff;
+      transition: color 0.3s ease;
+    }
+    .multiplier.crashed {
+      color: #ff3b3b;
+      text-shadow: 0 0 15px #ff3b3b;
+    }
+    .predictor {
+      text-align: center;
+      color: #3cffa1;
+      font-weight: 600;
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+    }
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    input[type=number] {
+      width: 110px;
+      font-size: 1.3rem;
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+      text-align: center;
+      font-weight: 600;
+      color: #0b1224;
+    }
+    button {
+      background: #0960cc;
+      border: none;
+      border-radius: 6px;
+      color: #e1e1e1;
+      font-weight: 700;
+      font-size: 1.2rem;
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      user-select: none;
+      min-width: 100px;
+    }
+    button:hover:not(:disabled) {
+      background: #08a0ff;
+    }
+    button:disabled {
+      background: #444;
+      cursor: default;
+    }
+    .balance {
+      text-align: center;
+      font-weight: 700;
+      font-size: 1.4rem;
+      margin-bottom: 25px;
+      color: #3cffa1;
+    }
+    .history {
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #084f90;
+      text-align: center;
+    }
+    th {
+      background: #084f90;
+      font-weight: 700;
+      color: #c5f7ff;
+    }
+    tbody tr:hover {
+      background: #084f90;
+    }
+    .profit-positive {
+      color: #3cffa1;
+      font-weight: 700;
+    }
+    .profit-negative {
+      color: #ff3b3b;
+      font-weight: 700;
+    }
   </style>
 </head>
 <body>
-  <h2>Qurtex 10% Daily Compounded Profit Tracker</h2>
-  <label>Initial Balance ($): <input id="startBalance" type="number" value="100" /></label>
-  <button onclick="startTracking()">Start</button>
-  <button onclick="saveData()">💾 Save</button>
-  <button onclick="resetData()">🗑 Reset</button>
-
-  <table id="trackerTable">
-    <thead>
-      <tr>
-        <th>Day</th>
-        <th>Starting Balance</th>
-        <th>10% Profit</th>
-        <th>Expected Total</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <header>Aviator 1xBet Clone</header>
+  <main>
+    <div class="multiplier" id="multiplierDisplay">1.00x</div>
+    <div class="predictor" id="predictorDisplay">Predicted Crash: 3.50x</div>
+    <div class="controls">
+      <input id="betInput" type="number" min="1" max="10000" step="1" value="10" />
+      <button id="startBtn">Start Round</button>
+      <button id="cashoutBtn" disabled>Cash Out</button>
+    </div>
+    <div class="balance" id="balanceDisplay">Balance: $1000</div>
+    <div class="history">
+      <table>
+        <thead>
+          <tr><th>Round</th><th>Crash Multiplier</th><th>Bet</th><th>Cashout</th><th>Profit</th></tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </main>
 
   <script>
-    const tableBody = document.querySelector("#trackerTable tbody");
-    let data = JSON.parse(localStorage.getItem("compoundQurtexData") || "[]");
-    let initialBalance = parseFloat(localStorage.getItem("compoundQurtexInitial") || "100");
+    const multiplierDisplay = document.getElementById('multiplierDisplay');
+    const predictorDisplay = document.getElementById('predictorDisplay');
+    const betInput = document.getElementById('betInput');
+    const startBtn = document.getElementById('startBtn');
+    const cashoutBtn = document.getElementById('cashoutBtn');
+    const balanceDisplay = document.getElementById('balanceDisplay');
+    const historyBody = document.getElementById('historyBody');
 
-    function startTracking() {
-      initialBalance = parseFloat(document.getElementById("startBalance").value);
-      localStorage.setItem("compoundQurtexInitial", initialBalance);
-      data = [];
+    let balance = 1000;
+    let bet = 0;
+    let currentMultiplier = 1.0;
+    let crashPoint = 0;
+    let roundActive = false;
+    let animationFrameId = null;
+    let roundNumber = 0;
+    let cashoutMultiplier = 0;
+    let hasCashedOut = false;
 
-      let current = initialBalance;
+    function checkAdmin() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('admin') === '1';
+    }
 
-      for (let day = 1; day <= 30; day++) {
-        const profit = +(current * 0.10).toFixed(2);
-        const expected = +(current + profit).toFixed(2);
-        data.push({ day, start: current, profit, expected, status: "" });
-        current = expected;
+    const isAdmin = checkAdmin();
+
+    function randomCrashPoint() {
+      // Crash between 1.2x and 10x with exponential bias
+      return Math.max(1.2, (Math.random() * 9) ** 2 / 9 + 1.2).toFixed(2);
+    }
+
+    function updateBalanceDisplay() {
+      balanceDisplay.textContent = `Balance: $${balance.toFixed(2)}`;
+    }
+
+    function updateMultiplierDisplay(crashed = false) {
+      multiplierDisplay.textContent = `${currentMultiplier.toFixed(2)}x`;
+      if (crashed) {
+        multiplierDisplay.classList.add('crashed');
+      } else {
+        multiplierDisplay.classList.remove('crashed');
       }
-
-      renderTable();
-      saveData();
     }
 
-    function renderTable() {
-      tableBody.innerHTML = "";
-      data.forEach((row, i) => {
-        const tr = document.createElement("tr");
-        tr.className = row.status === "win" ? "win" : row.status === "lose" ? "lose" : "";
-
-        tr.innerHTML = `
-          <td>${row.day}</td>
-          <td>$${row.start.toFixed(2)}</td>
-          <td>$${row.profit.toFixed(2)}</td>
-          <td>$${row.expected.toFixed(2)}</td>
-          <td>
-            <button onclick="setStatus(${i}, 'win')">✅</button>
-            <button onclick="setStatus(${i}, 'lose')">❌</button>
-          </td>
-        `;
-        tableBody.appendChild(tr);
-      });
+    function updatePredictor() {
+      if (!isAdmin) {
+        predictorDisplay.style.display = 'none';
+        return;
+      }
+      predictorDisplay.style.display = 'block';
+      const predicted = (Math.random() * 3.5 + 1.5).toFixed(2);
+      predictorDisplay.textContent = `Predicted Crash: ${predicted}x`;
     }
 
-    function setStatus(index, status) {
-      data[index].status = status;
-      renderTable();
-      saveData();
+    function addHistory(round, crash, betAmount, cashoutAt, profit) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${round}</td><td>${crash}x</td><td>$${betAmount}</td><td>${cashoutAt ? cashoutAt + 'x' : '-'}</td><td class="${profit >= 0 ? 'profit-positive' : 'profit-negative'}">${profit >= 0 ? '+' : ''}$${profit.toFixed(2)}</td>`;
+      historyBody.prepend(tr);
     }
 
-    function saveData() {
-      localStorage.setItem("compoundQurtexData", JSON.stringify(data));
+    function startRound() {
+      bet = parseFloat(betInput.value);
+      if (isNaN(bet) || bet <= 0) {
+        alert('Please enter a valid bet amount.');
+        return;
+      }
+      if (bet > balance) {
+        alert('Insufficient balance.');
+        return;
+      }
+      balance -= bet;
+      updateBalanceDisplay();
+
+      currentMultiplier = 1.0;
+      crashPoint = parseFloat(randomCrashPoint());
+      roundNumber++;
+      hasCashedOut = false;
+      cashoutMultiplier = 0;
+      roundActive = true;
+
+      startBtn.disabled = true;
+      cashoutBtn.disabled = false;
+      betInput.disabled = true;
+      updateMultiplierDisplay();
+      updatePredictor();
+
+      animateMultiplier();
     }
 
-    function resetData() {
-      localStorage.removeItem("compoundQurtexData");
-      localStorage.removeItem("compoundQurtexInitial");
-      location.reload();
+    function animateMultiplier() {
+      const startTime = performance.now();
+
+      function step(time) {
+        const elapsed = (time - startTime) / 1000; // seconds
+        // Multiplier grows exponentially over time for tension
+        currentMultiplier = 1 + elapsed * 0.8 + Math.pow(elapsed, 2) * 0.1;
+        if (currentMultiplier >= crashPoint) {
+          currentMultiplier = crashPoint;
+          roundActive = false;
+          updateMultiplierDisplay(true);
+          endRound();
+          return;
+        }
+        updateMultiplierDisplay();
+        animationFrameId = requestAnimationFrame(step);
+      }
+      animationFrameId = requestAnimationFrame(step);
     }
 
-    if (data.length > 0 && initialBalance > 0) {
-      renderTable();
+    function cashOut() {
+      if (!roundActive || hasCashedOut) return;
+      hasCashedOut = true;
+      cashoutMultiplier = currentMultiplier;
+      roundActive = false;
+      cancelAnimationFrame(animationFrameId);
+      updateMultiplierDisplay();
+      endRound();
     }
+
+    function endRound() {
+      startBtn.disabled = false;
+      cashoutBtn.disabled = true;
+      betInput.disabled = false;
+
+      let profit = 0;
+      if (hasCashedOut) {
+        profit = bet * (cashoutMultiplier - 1);
+        balance += bet + profit;
+      } else {
+        profit = -bet;
+      }
+      updateBalanceDisplay();
+
+      addHistory(roundNumber, crashPoint, bet, hasCashedOut ? cashoutMultiplier.toFixed(2) : null, profit);
+
+      // Reset multiplier color after a short delay
+      setTimeout(() => {
+        multiplierDisplay.classList.remove('crashed');
+        multiplierDisplay.textContent = '1.00x';
+      }, 2000);
+    }
+
+    startBtn.addEventListener('click', startRound);
+    cashoutBtn.addEventListener('click', cashOut);
+
+    // Initialize UI
+    updateBalanceDisplay();
+    updateMultiplierDisplay();
+    updatePredictor();
   </script>
 </body>
 </html>
